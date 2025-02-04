@@ -1,0 +1,51 @@
+FROM gcc-toolchain-base-with-host-compiler as build_image
+
+ARG GCC_VERSION
+WORKDIR /src/gcc
+RUN curl --fail-early --location https://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.xz \
+      | tar --xz --extract --strip-components=1 --file -
+RUN ./contrib/download_prerequisites
+
+ARG SRC_SYSROOT_DIR
+ARG INSTALL_DIR
+COPY "${SRC_SYSROOT_DIR}" "${INSTALL_DIR}/x86_64-linux/sys-root"
+
+WORKDIR /src/gcc/build
+RUN ../configure                 \
+      --build=x86_64-linux-gnu   \
+      --host=x86_64-linux        \
+      --target=x86_64-linux      \
+      --enable-default-pie       \
+      --enable-languages=c,c++   \
+      --disable-multilib         \
+      --prefix=${INSTALL_DIR}    \
+      --enable-libstdcxx-threads \
+      --with-sysroot
+RUN make --jobs $(nproc) all-gcc
+RUN make install-gcc
+ENV PATH="${INSTALL_DIR}/bin:${PATH}"
+RUN make --jobs $(nproc)
+RUN make uninstall
+RUN make install all-target-libgcc
+RUN make install all-target-libstdc++-v3
+
+ARG BINUTILS_VERSION
+WORKDIR /src/binutils
+RUN curl --fail-early --location https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.xz \
+      | tar --xz --extract --strip-components=1 --file -
+WORKDIR /src/binutils/build
+RUN ../configure               \
+      --prefix=${INSTALL_DIR}  \
+      --build=x86_64-linux-gnu \
+      --host=x86_64-linux      \
+      --target=x86_64-linux    \
+      --with-sysroot
+RUN make --jobs $(nproc)
+RUN make install
+
+# ----------------------------------------------------------------------------------------------------------------
+
+FROM alpine:latest
+
+ARG INSTALL_DIR
+COPY --from=build_image "${INSTALL_DIR}" "${INSTALL_DIR}"

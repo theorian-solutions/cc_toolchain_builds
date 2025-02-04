@@ -1,0 +1,17 @@
+FROM gcc-toolchain-base-with-host-compiler AS build_image
+
+ARG INSTALL_DIR
+ARG LINUX_KERNEL_VERSION
+WORKDIR /src/kernel
+RUN curl --fail-early --location https://github.com/torvalds/linux/archive/refs/tags/v${LINUX_KERNEL_VERSION}.tar.gz \
+      | tar --gzip --extract --strip-components=1 --file -
+RUN make headers_install \
+      ARCH="x86_64" \
+      INSTALL_HDR_PATH="${INSTALL_DIR}/usr"
+
+# ----------------------------------------------------------------------------------------------------------------
+
+FROM alpine:latest
+
+ARG INSTALL_DIR
+COPY --from=build_image "${INSTALL_DIR}" "${INSTALL_DIR}"

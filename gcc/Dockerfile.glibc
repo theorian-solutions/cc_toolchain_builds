@@ -1,0 +1,33 @@
+ARG LINUX_KERNEL_VERSION
+FROM gcc-toolchain-linux-kernel:${LINUX_KERNEL_VERSION} AS linux_kernel_image
+
+# ----------------------------------------------------------------------------------------------------------------
+
+FROM gcc-toolchain-base-with-host-compiler AS build_image
+
+ARG INSTALL_DIR
+COPY --from=linux_kernel_image "${INSTALL_DIR}" "${INSTALL_DIR}"
+
+ARG GLIBC_VERSION
+WORKDIR /src/glibc
+RUN curl --fail-early --location https://ftp.gnu.org/gnu/libc/glibc-${GLIBC_VERSION}.tar.xz \
+      | tar --xz --extract --strip-components=1 --file -
+WORKDIR /src/glibc/build
+RUN ../configure                                         \
+      --prefix=/usr                                      \
+      --build=x86_64-linux-gnu                           \
+      --host=x86_64-linux                                \
+      --target=x86_64-linux                              \
+      --enable-kernel=4.15                               \
+      --with-headers="${INSTALL_DIR}/usr/include" \
+      --with-tls                                         \
+      libc_cv_slibdir=/usr/lib
+RUN make all --jobs $(nproc)
+RUN make DESTDIR=${INSTALL_DIR} install
+
+# ----------------------------------------------------------------------------------------------------------------
+
+FROM alpine:latest
+
+ARG INSTALL_DIR
+COPY --from=build_image "${INSTALL_DIR}" "${INSTALL_DIR}"

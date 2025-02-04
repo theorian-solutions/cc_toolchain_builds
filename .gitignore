@@ -169,3 +169,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Used for debugging only to store build artifacts
+ci/
+.vscode/launch.json
