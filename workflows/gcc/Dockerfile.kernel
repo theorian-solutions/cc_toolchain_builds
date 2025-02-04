@@ -1,0 +1,17 @@
+FROM theorian/cpp-toolchain-host-base:latest AS build_image
+
+ARG SYSROOT_OUTPUT_DIR
+ARG LINUX_KERNEL_VERSION
+WORKDIR /src/kernel
+RUN curl --fail-early --location https://github.com/torvalds/linux/archive/refs/tags/v${LINUX_KERNEL_VERSION}.tar.gz \
+        | tar --gzip --extract --strip-components=1 --file -
+RUN make headers_install \
+      ARCH="x86_64" \
+      INSTALL_HDR_PATH="${SYSROOT_OUTPUT_DIR}/usr"
+
+# ----------------------------------------------------------------------------------------------------------------
+
+FROM alpine:latest
+
+ARG SYSROOT_OUTPUT_DIR
+COPY --from=build_image "${SYSROOT_OUTPUT_DIR}" "${SYSROOT_OUTPUT_DIR}"

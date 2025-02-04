@@ -1,0 +1,3 @@
+FROM theorian/cpp-toolchain-base:latest
+
+RUN apt install build-essential -y
