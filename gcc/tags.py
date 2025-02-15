@@ -1,7 +1,8 @@
-GCC_TOOLCHAIN_BASE_IMAGE_TAG = "gcc-toolchain-base"
-GCC_TOOLCHAIN_BASE_WITH_HOST_COMPILER_IMAGE_TAG = (
-    "gcc-toolchain-base-with-host-compiler"
-)
-GCC_TOOLCHAIN_LINUX_KERNEL_IMAGE_TAG = "gcc-toolchain-linux-kernel"
-GCC_TOOLCHAIN_GLIBC_IMAGE_TAG = "gcc-toolchain-glibc"
-GCC_TOOLCHAIN_IMAGE_TAG = "gcc"
+class DockerImageTags:
+    """Contains tags for docker images built by this module."""
+
+    BASE = "gcc-toolchain-base"
+    """Image tag for base image used by all other docker images."""
+
+    GCC = "gcc"
+    """Image tag for gcc docker image."""

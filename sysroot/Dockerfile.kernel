@@ -1,4 +1,4 @@
-FROM gcc-toolchain-base-with-host-compiler AS build_image
+FROM sysroot-toolchain-base AS build_image
 
 ARG INSTALL_DIR
 ARG LINUX_KERNEL_VERSION

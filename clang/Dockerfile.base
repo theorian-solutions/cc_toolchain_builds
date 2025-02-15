@@ -1,0 +1,4 @@
+FROM ubuntu:18.04
+
+RUN apt update && apt upgrade -y
+RUN apt install curl zip unzip ninja-build python3 python3-distutils git -y
