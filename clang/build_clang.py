@@ -186,7 +186,7 @@ class BuildClangApp(ToolchainBaseApp[BuildClangArgs]):
                 ),
                 "SRC_CMAKE_DIR": os.path.relpath(
                     os.path.join(
-                        self._sysroot_path,
+                        self._cmake_path,
                         get_prefix_from_archive_path(self.args.cmake_path),
                     ),
                     self._build_path,
