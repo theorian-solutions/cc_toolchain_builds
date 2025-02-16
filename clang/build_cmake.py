@@ -76,6 +76,7 @@ class BuildCMakeApp(CliApp[BuildCMakeArgs]):
 
         try:
             # Extract sysroot as archive
+            os.makedirs(os.path.dirname(self.args.cache_path), exist_ok=True)
             self.logger.info(f"Storing cmake to cache at '{self.args.cache_path}'...")
 
             with lzma.open(self.args.cache_path, "wb") as output:
