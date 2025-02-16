@@ -191,7 +191,7 @@ jobs:
             --llvm-version=${{ matrix.version.llvm }}                                          \
             --cmake-path=${{ env.CMAKE_CACHE_PATH }}                                           \
             --force-rebuild=${{ github.event.inputs.force_rebuild }}                           \
-            --llvm-enable-projects=${{ matrix.version.llvm_enable_projects }}                  \
-            --llvm-enable-runtimes=${{ matrix.version.llvm_enable_runtimes }}                  \
-            --host-clang-version=$HOST_CLANG_VERSION                                           \
-            --host-gcc-version=$HOST_GCC_PATH
+            --llvm-enable-projects="${{ matrix.version.llvm_enable_projects }}"                \
+            --llvm-enable-runtimes="${{ matrix.version.llvm_enable_runtimes }}"                \
+            --host-clang-version="$HOST_CLANG_VERSION"                                         \
+            --host-gcc-version="$HOST_GCC_PATH"
