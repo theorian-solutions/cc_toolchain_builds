@@ -94,6 +94,8 @@ jobs:
           name: SYSROOT (Linux kernel v${{ github.event.inputs.linux_kernel_version }}, GLIBC v${{ github.event.inputs.glibc_version }})
           tag_name: ${{ env.RELEASE_TAG }}
       - name: Build sysroot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 sysroot/build_sysroot.py                                         \
             --repository=${{ github.repository }}                                  \
