@@ -184,14 +184,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python3 clang/build_clang.py                                                              \
-            --repository=${{ github.repository }}                                                   \
-            --release-id=${{ env.RELEASE_TAG }}                                                     \
-            --sysroot-path=${{ fromJson(steps.download-sysroot.outputs.downloaded_files)[0] }}      \
-            --cmake-path=${{ env.CMAKE_CACHE_PATH }}                                                \
-            --force-rebuild=${{ github.event.inputs.force_rebuild }}                                \
-            --llvm-enable-projects=${{ matrix.version.llvm_enable_projects }}                       \
-            --llvm-enable-runtimes=${{ matrix.version.llvm_enable_runtimes }}                       \
-            --host-clang-version=$HOST_CLANG_VERSION                                                \
-            --host-gcc-version=$HOST_GCC_PATH                                                       \
-            --llvm-version=${{ matrix.version.llvm }}
+          python3 clang/build_clang.py                                                         \
+            --repository=${{ github.repository }}                                              \
+            --release-id=${{ env.RELEASE_TAG }}                                                \
+            --sysroot-path=${{ fromJson(steps.download-sysroot.outputs.downloaded_files)[0] }} \
+            --llvm-version=${{ matrix.version.llvm }}                                          \
+            --cmake-path=${{ env.CMAKE_CACHE_PATH }}                                           \
+            --force-rebuild=${{ github.event.inputs.force_rebuild }}                           \
+            --llvm-enable-projects=${{ matrix.version.llvm_enable_projects }}                  \
+            --llvm-enable-runtimes=${{ matrix.version.llvm_enable_runtimes }}                  \
+            --host-clang-version=$HOST_CLANG_VERSION                                           \
+            --host-gcc-version=$HOST_GCC_PATH
