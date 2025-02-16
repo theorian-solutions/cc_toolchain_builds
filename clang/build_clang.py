@@ -194,9 +194,8 @@ class BuildClangApp(ToolchainBaseApp[BuildClangArgs]):
                 "SRC_HOST_COMPILER_DIR": os.path.relpath(
                     host_compiler_path, self._build_path
                 ),
-                "PARALLEL_COMPILE_JOBS": psutil.cpu_count(logical=False),
-                "PARALLEL_LINK_JOBS": psutil.virtual_memory().total
-                // (15 * 1024**3),  # 1 Link job per 15GB of RAM
+                "PARALLEL_COMPILE_JOBS": f"{psutil.cpu_count(logical=False)}",
+                "PARALLEL_LINK_JOBS": f"{psutil.virtual_memory().total // (15 * 1024**3)}",  # 1 Link job per 15GB of RAM
                 "ENABLE_PROJECTS": self.args.llvm_enable_projects,
                 "ENABLE_RUNTIMES": self.args.llvm_enable_runtimes,
                 "ENABLE_LIBCXX": "OFF" if self._is_host_gcc else "ON",
