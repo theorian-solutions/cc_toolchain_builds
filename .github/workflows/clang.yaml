@@ -16,7 +16,6 @@ on:
         description: 'If set rebuilds and reuploads existing builds for given release version (yes/no).'
         default: 'no'
         required: false
-  pull_request:
 
 permissions:
   contents: write
@@ -107,7 +106,7 @@ jobs:
         run: |
           python3 clang/build_cmake.py                                                           \
             --cache-path=${{ env.CMAKE_CACHE_PATH }}                                             \
-            --host_gcc_path=${{ fromJson(steps.download-host-gcc.outputs.downloaded_files)[0] }}
+            --host-gcc-path=${{ fromJson(steps.download-host-gcc.outputs.downloaded_files)[0] }}
         if: steps.cache-cmake.outputs.cache-hit != 'true'
 
   clang:
