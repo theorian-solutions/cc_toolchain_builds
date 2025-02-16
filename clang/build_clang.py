@@ -200,7 +200,9 @@ class BuildClangApp(ToolchainBaseApp[BuildClangArgs]):
                 "ENABLE_PROJECTS": self.args.llvm_enable_projects,
                 "ENABLE_RUNTIMES": self.args.llvm_enable_runtimes,
                 "ENABLE_LIBCXX": "OFF" if self._is_host_gcc else "ON",
-                "INSTALL_DIR": get_output_dir_from_archive_path(self._release_assets),
+                "INSTALL_DIR": get_output_dir_from_archive_path(
+                    self._release_asset_name
+                ),
                 "LLVM_VERSION": self.args.llvm_version,
             },
         )
