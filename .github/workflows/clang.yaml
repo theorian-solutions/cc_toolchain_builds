@@ -194,4 +194,4 @@ jobs:
             --llvm-enable-projects="${{ matrix.version.llvm_enable_projects }}"                \
             --llvm-enable-runtimes="${{ matrix.version.llvm_enable_runtimes }}"                \
             --host-clang-version="$HOST_CLANG_VERSION"                                         \
-            --host-gcc-version="$HOST_GCC_PATH"
+            --host-gcc-path="$HOST_GCC_PATH"
