@@ -41,7 +41,7 @@ class BuildCMakeApp(CliApp[BuildCMakeArgs]):
         )
 
     def _build_cmake(self):
-        """Builds cmake docker image."""
+        """Builds CMake docker image."""
 
         self.logger.info(f"Building CMake...")
         response = self.docker.api.build(
@@ -69,7 +69,7 @@ class BuildCMakeApp(CliApp[BuildCMakeArgs]):
         self.logger.info(f"CMake was successfully built!")
 
     def _upload_artifacts(self):
-        """Extracts sysroot from glibc image and stores it in the cache folder."""
+        """Extracts CMake from docker image and stores it in the cache folder."""
 
         # Create container from glibc image to extract sysroot
         cmake_container = self.docker.containers.create(image=DockerImageTags.CMAKE)
@@ -77,7 +77,7 @@ class BuildCMakeApp(CliApp[BuildCMakeArgs]):
         try:
             # Extract sysroot as archive
             os.makedirs(os.path.dirname(self.args.cache_path), exist_ok=True)
-            self.logger.info(f"Storing cmake to cache at '{self.args.cache_path}'...")
+            self.logger.info(f"Storing CMake to cache at '{self.args.cache_path}'...")
 
             with lzma.open(self.args.cache_path, "wb") as output:
                 chunks, _ = cmake_container.get_archive(
@@ -85,9 +85,7 @@ class BuildCMakeApp(CliApp[BuildCMakeArgs]):
                 )
                 for chunk in chunks:
                     output.write(chunk)
-            self.logger.info(
-                f"linux_kernel+glibc stored to cache at '{self.args.cache_path}'!"
-            )
+            self.logger.info(f"CMake stored to cache at '{self.args.cache_path}'!")
         finally:
             # Cleanup container
             self.docker.api.remove_container(cmake_container.id)

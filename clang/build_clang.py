@@ -29,8 +29,8 @@ class BuildClangArgs(ToolchainBaseArgs):
         description="Semicolon separated list of projects to build. Dependant on LLVM version.",
     )
 
-    llvm_enable_runtimes: str = Field(
-        ...,
+    llvm_enable_runtimes: Optional[str] = Field(
+        default="",
         description="Semicolon separated list of runtimes to build. Dependant on LLVM version.",
     )
 

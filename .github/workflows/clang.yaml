@@ -110,7 +110,7 @@ jobs:
         if: steps.cache-cmake.outputs.cache-hit != 'true'
 
   clang:
-    name: Build Clang ${{ matrix.version.clang }}
+    name: Build Clang ${{ matrix.version.llvm }}
     runs-on: ubuntu-latest-16cpu
     needs: cmake
 
