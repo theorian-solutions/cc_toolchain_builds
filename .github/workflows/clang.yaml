@@ -155,13 +155,11 @@ jobs:
         if: matrix.version.host_gcc != ''
       - name: Setup host compiler
         run: |
-          echo "HOST_CLANG_VERSION=''" >> $GITHUB_ENV
           echo "HOST_GCC_PATH=${{ fromJson(steps.download-host-gcc.outputs.downloaded_files)[0] }}" >> $GITHUB_ENV
         if: matrix.version.host_gcc != ''
       - name: Setup host compiler
         run: |
           echo "HOST_CLANG_VERSION=${{ matrix.version.host_clang }}" >> $GITHUB_ENV
-          echo "HOST_GCC_PATH=''" >> $GITHUB_ENV
         if: matrix.version.host_gcc == ''
       - name: Download CMake from cache
         uses: actions/cache@v4
