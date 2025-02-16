@@ -1,4 +1,4 @@
 FROM ubuntu:18.04
 
 RUN apt update && apt upgrade -y
-RUN apt install curl file build-essential -y
+RUN apt install curl file gawk bison build-essential -y
