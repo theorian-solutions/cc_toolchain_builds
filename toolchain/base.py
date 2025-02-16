@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 import lzma
 import os
 from typing import TypeVar
@@ -49,8 +49,8 @@ class ToolchainBaseApp(CliApp[TToolchainArgs]):
             self._release_artifacts_cache = self._release.get_assets()
         return self._release_artifacts_cache
 
-    @abstractmethod
     @property
+    @abstractmethod
     def _release_asset_name(self) -> str:
         """Gets the name of the release asset that will be uploaded to GitHub releases"""
 

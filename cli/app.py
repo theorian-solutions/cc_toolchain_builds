@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 import argparse
 import logging
 import os
@@ -21,7 +21,7 @@ from github import Auth, Github
 TCliArgs = TypeVar("TCliArgs")
 
 
-class CliApp(Generic[TCliArgs]):
+class CliApp(ABC, Generic[TCliArgs]):
     def __init__(self, name: str):
         self._Model = get_args(self.__orig_bases__[0])[0]
         self._app_name = name
