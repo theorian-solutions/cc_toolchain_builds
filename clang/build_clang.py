@@ -54,7 +54,7 @@ class BuildClangArgs(ToolchainBaseArgs):
         ):
             raise ValueError(
                 "Either `--host-clang-version` or `--host-gcc-path` must be provided! "
-                f"Got --host-clang-version={value} and --host_clang_version={info.data["host_clang_version"]}"
+                f"Got --host_clang_version='{info.data["host_clang_version"]}' and --host-gcc-path='{value}'"
             )
         return value
 
