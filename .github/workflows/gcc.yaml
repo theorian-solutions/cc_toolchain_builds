@@ -6,7 +6,7 @@ on:
       release_version:
         description: 'Version that will be appended to release name and tag. Can be anything (i.e. does not have to be a number).'
         required: true
-      sysroot_version:
+      sysroot_release:
         description: 'Version of sysroot release to use as a toolchain sysroot.'
         required: true
       force_rebuild:
@@ -112,15 +112,15 @@ jobs:
             --cache-path=${{ env.BASE_IMAGE_CACHE_PATH }} \
             --op=load
       - name: Download sysroot
-        id: download_sysroot
+        id: download-sysroot
         uses: robinraju/release-downloader@v1
         with:
-          tag: sysroot-${{ github.event.inputs.sysroot_version }}
+          tag: sysroot-${{ github.event.inputs.sysroot_release }}
           fileName: sysroot-*.tar.xz
       - name: Create GCC release
         uses: softprops/action-gh-release@v2
         with:
-          name: GCC ${{ github.event.inputs.release_version }} (SYSROOT - ${{ github.event.inputs.sysroot_version }})
+          name: GCC ${{ github.event.inputs.release_version }} (SYSROOT ${{ github.event.inputs.sysroot_release }})
           tag_name: ${{ env.RELEASE_TAG }}
       - name: Build and publish GCC
         env:
@@ -129,7 +129,7 @@ jobs:
           python3 gcc/build_gcc.py                                                             \
             --repository=${{ github.repository }}                                              \
             --release-id=${{ env.RELEASE_TAG }}                                                \
-            --sysroot-path=${{ fromJson(steps.download_sysroot.outputs.downloaded_files)[0] }} \
+            --sysroot-path=${{ fromJson(steps.download-sysroot.outputs.downloaded_files)[0] }} \
             --force-rebuild=${{ github.event.inputs.force_rebuild }}                           \
             --host-gcc-version=${{ matrix.version.host }}                                      \
             --gcc-version=${{ matrix.version.gcc }}                                            \

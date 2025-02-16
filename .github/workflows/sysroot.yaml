@@ -91,7 +91,7 @@ jobs:
       - name: Create sysroot release
         uses: softprops/action-gh-release@v2
         with:
-          name: SYSROOT (Linux kernel v${{ github.event.inputs.linux_kernel_version }}, GLIBC v${{ github.event.inputs.glibc_version }})
+          name: SYSROOT ${{ github.event.inputs.release_version }}
           tag_name: ${{ env.RELEASE_TAG }}
       - name: Build sysroot
         env:

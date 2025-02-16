@@ -20,12 +20,12 @@ ENV HOST_COMPILER_DIR="/opt/cc-x86_64-host"
 COPY "${SRC_HOST_COMPILER_DIR}" "${HOST_COMPILER_DIR}"
 ENV PATH="${HOST_COMPILER_DIR}/bin:${PATH}"
 
-# Set to number of cores
+# Set to number of physical cores
 ARG PARALLEL_COMPILE_JOBS
 # Set to floor(Available RAM / 15GB)
 ARG PARALLEL_LINK_JOBS
 # Set depending on LLVM version
-ARG ENABLE_PROJECTS="clang;clang-tools-extra;lld;libunwind;libcxxabi;pstl;libcxx;compiler-rt;openmp"
+ARG ENABLE_PROJECTS
 # Set depending on LLVM version
 ARG ENABLE_RUNTIMES="libunwind;libcxxabi;pstl;libcxx;compiler-rt;openmp"
 # Set to ON if host compiler is Clang

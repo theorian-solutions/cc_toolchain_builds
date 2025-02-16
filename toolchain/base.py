@@ -116,13 +116,15 @@ class ToolchainBaseApp(CliApp[TToolchainArgs]):
     def run(self):
         if self.args.force_rebuild:
             self.logger.warning(
-                "Flag 'force-rebuild' used, discarding any already built and uploaded GCC artifact!"
+                "Flag 'force-rebuild' used, discarding any already built and uploaded toolchain artifact!"
             )
         elif not self._check_if_already_exists():
-            self.logger.warning("No existing GCC artifact found in GitHub releases!")
+            self.logger.warning(
+                "No existing toolchain artifact found in GitHub releases!"
+            )
         else:
             self.logger.info(
-                "GCC already built and published to GitHub releases. Skipping this step..."
+                "Toolchain already built and published to GitHub releases. Skipping this step..."
             )
             return
 

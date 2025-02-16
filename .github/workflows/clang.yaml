@@ -1,0 +1,198 @@
+name: Build and publish Clang
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Version that will be appended to release name and tag. Can be anything (i.e. does not have to be a number).'
+        required: true
+      sysroot_release:
+        description: 'Version of sysroot release to use as a toolchain sysroot.'
+        required: true
+      gcc_release:
+        description: 'Version of GCC release where version will be picked up to use as a host toolchain.'
+        required: true
+      force_rebuild:
+        description: 'If set rebuilds and reuploads existing builds for given release version (yes/no).'
+        default: 'no'
+        required: false
+  pull_request:
+
+permissions:
+  contents: write
+
+env:
+  BASE_IMAGE_CACHE_KEY: clang-toolchain-base-image-
+  BASE_IMAGE_CACHE_PATH: ci/cache/docker/clang
+  CMAKE_CACHE_KEY: clang-toolchain-cmake-
+  CMAKE_CACHE_PATH: ci/cache/cmake/cmake-3.20.0-x86_64-linux-gnu.tar.xz
+  RELEASE_TAG: clang-${{ github.event.inputs.release_version }}
+
+jobs:
+  base_image:
+    name: Build base image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      - name: Setup PYTHONPATH
+        run: echo "PYTHONPATH=$(pwd):$PYTHONPATH" >> $GITHUB_ENV
+      - name: Verify if Clang toolchain base image cached
+        id: cache-clang-toolchain-base-image
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BASE_IMAGE_CACHE_PATH }}
+          key: ${{ env.BASE_IMAGE_CACHE_KEY }}${{ hashFiles('clang/Dockerfile.base') }}
+          lookup-only: true
+      - name: Build Clang toolchain base image
+        run: |
+          python3 image/base_image.py                     \
+            --toolchain=clang                               \
+            --cache-path=${{ env.BASE_IMAGE_CACHE_PATH }} \
+            --op=store
+        if: steps.cache-clang-toolchain-base-image.outputs.cache-hit != 'true'
+
+  cmake:
+    name: Build CMake
+    runs-on: ubuntu-latest-16cpu
+    needs: base_image
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      - name: Setup PYTHONPATH
+        run: echo "PYTHONPATH=$(pwd):$PYTHONPATH" >> $GITHUB_ENV
+      - name: Download Clang toolchain base images from cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BASE_IMAGE_CACHE_PATH }}
+          key: ${{ env.BASE_IMAGE_CACHE_KEY }}${{ hashFiles('clang/Dockerfile.base') }}
+          fail-on-cache-miss: true
+      - name: Load Clang toolchain base image
+        run: |
+          python3 image/base_image.py                     \
+            --toolchain=clang                             \
+            --cache-path=${{ env.BASE_IMAGE_CACHE_PATH }} \
+            --op=load
+      - name: Verify if CMake artifact is cached
+        id: cache-cmake
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CMAKE_CACHE_PATH }}
+          key: ${{ env.CMAKE_CACHE_KEY }}${{ hashFiles('clang/Dockerfile.cmake') }}
+          lookup-only: true
+      - name: Download host GCC
+        id: download-host-gcc
+        uses: robinraju/release-downloader@v1
+        with:
+          tag: gcc-${{ github.event.inputs.gcc_release }}
+          fileName: gcc-7.*.tar.xz
+        if: steps.cache-cmake.outputs.cache-hit != 'true'
+      - name: Build CMake
+        run: |
+          python3 clang/build_cmake.py                                                           \
+            --cache-path=${{ env.CMAKE_CACHE_PATH }}                                             \
+            --host_gcc_path=${{ fromJson(steps.download-host-gcc.outputs.downloaded_files)[0] }}
+        if: steps.cache-cmake.outputs.cache-hit != 'true'
+
+  clang:
+    name: Build Clang ${{ matrix.version.clang }}
+    runs-on: ubuntu-latest-16cpu
+    needs: cmake
+
+    strategy:
+      max-parallel: 1
+      matrix:
+        version:
+          - llvm: "11.1.0"
+            llvm_enable_projects: "clang;clang-tools-extra;lld;libunwind;libcxxabi;pstl;libcxx;compiler-rt;openmp"
+            host_gcc: ${{ github.event.inputs.gcc_release }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      - name: Setup PYTHONPATH
+        run: echo "PYTHONPATH=$(pwd):$PYTHONPATH" >> $GITHUB_ENV
+      - name: Download Clang toolchain base images from cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BASE_IMAGE_CACHE_PATH }}
+          key: ${{ env.BASE_IMAGE_CACHE_KEY }}${{ hashFiles('clang/Dockerfile.base') }}
+          fail-on-cache-miss: true
+      - name: Load Clang toolchain base image
+        run: |
+          python3 image/base_image.py                     \
+            --toolchain=clang                             \
+            --cache-path=${{ env.BASE_IMAGE_CACHE_PATH }} \
+            --op=load
+      - name: Download host GCC
+        id: download-host-gcc
+        uses: robinraju/release-downloader@v1
+        with:
+          tag: gcc-${{ github.event.inputs.gcc_release }}
+          fileName: gcc-7.*.tar.xz
+        if: matrix.version.host_gcc != ''
+      - name: Setup host compiler
+        run: |
+          echo "HOST_CLANG_VERSION=''" >> $GITHUB_ENV
+          echo "HOST_GCC_PATH=${{ fromJson(steps.download-host-gcc.outputs.downloaded_files)[0] }}" >> $GITHUB_ENV
+        if: matrix.version.host_gcc != ''
+      - name: Setup host compiler
+        run: |
+          echo "HOST_CLANG_VERSION=${{ matrix.version.host_clang }}" >> $GITHUB_ENV
+          echo "HOST_GCC_PATH=''" >> $GITHUB_ENV
+        if: matrix.version.host_gcc == ''
+      - name: Download CMake from cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CMAKE_CACHE_PATH }}
+          key: ${{ env.CMAKE_CACHE_KEY }}${{ hashFiles('clang/Dockerfile.cmake') }}
+          fail-on-cache-miss: true
+      - name: Download sysroot
+        id: download-sysroot
+        uses: robinraju/release-downloader@v1
+        with:
+          tag: sysroot-${{ github.event.inputs.sysroot_release }}
+          fileName: sysroot-*.tar.xz
+      - name: Create Clang release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Clang ${{ github.event.inputs.release_version }} (SYSROOT ${{ github.event.inputs.sysroot_release }})
+          tag_name: ${{ env.RELEASE_TAG }}
+      - name: Build and publish Clang
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 clang/build_clang.py                                                              \
+            --repository=${{ github.repository }}                                                   \
+            --release-id=${{ env.RELEASE_TAG }}                                                     \
+            --sysroot-path=${{ fromJson(steps.download-sysroot.outputs.downloaded_files)[0] }}      \
+            --cmake-path=${{ env.CMAKE_CACHE_PATH }}                                                \
+            --force-rebuild=${{ github.event.inputs.force_rebuild }}                                \
+            --llvm-enable-projects=${{ matrix.version.llvm_enable_projects }}                       \
+            --llvm-enable-runtimes=${{ matrix.version.llvm_enable_runtimes }}                       \
+            --host-clang-version=$HOST_CLANG_VERSION                                                \
+            --host-gcc-version=$HOST_GCC_PATH                                                       \
+            --llvm-version=${{ matrix.version.llvm }}

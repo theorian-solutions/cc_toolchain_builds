@@ -37,8 +37,6 @@ class BuildGccApp(ToolchainBaseApp[BuildGccArgs]):
         self._build_path = os.path.dirname(os.path.abspath(__file__))
         self._gcc_dockerfile = "Dockerfile.gcc"
         self._gcc_no_host_dockerfile = "Dockerfile.gcc_no_host"
-        self._release_cache = None
-        self._release_artifacts_cache = None
         self._sysroot_path = os.path.join(self._build_path, "ci/sysroot")
         self._host_gcc_path = os.path.join(self._build_path, "ci/gcc-x86_64-host")
 
