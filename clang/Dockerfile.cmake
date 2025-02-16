@@ -1,5 +1,7 @@
 FROM clang-toolchain-base AS build_image
 
+RUN apt install make -y
+
 WORKDIR /src/cmake
 RUN curl --fail-early --location https://github.com/Kitware/CMake/releases/download/v3.20.0/cmake-3.20.0.tar.gz \
   | tar --gz --extract --strip-components=1 --file -
