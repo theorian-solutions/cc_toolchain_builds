@@ -49,7 +49,7 @@ jobs:
       - name: Build Clang toolchain base image
         run: |
           python3 image/base_image.py                     \
-            --toolchain=clang                               \
+            --toolchain=clang                             \
             --cache-path=${{ env.BASE_IMAGE_CACHE_PATH }} \
             --op=store
         if: steps.cache-clang-toolchain-base-image.outputs.cache-hit != 'true'
