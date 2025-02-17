@@ -1,7 +1,33 @@
 FROM ubuntu:18.04
 
-RUN apt update && apt upgrade -y
-RUN apt install curl zip unzip make ninja-build python3 python3-distutils git build-essential libssl-dev -y
+RUN DEBIAN_FRONTEND=noninteractive apt update && apt upgrade -y
+RUN DEBIAN_FRONTEND=noninteractive apt install \
+  curl                                         \
+  zip                                          \
+  unzip                                        \
+  make                                         \
+  ninja-build                                  \
+  git                                          \
+  build-essential                              \
+  zlib1g-dev                                   \
+  libncurses5-dev                              \
+  libgdbm-dev                                  \
+  libnss3-dev                                  \
+  libssl-dev                                   \
+  libreadline-dev                              \
+  libffi-dev -y
+
+WORKDIR /src/python
+RUN curl --fail-early --location https://www.python.org/ftp/python/3.12.8/Python-3.12.8.tgz \
+  | tar --gz --extract --strip-components=1 --file -
+
+RUN ./configure                   \
+  --enable-optimizations          \
+  --with-ensurepip=install
+RUN make --jobs $(nproc)
+RUN make install
+RUN python3 -m ensurepip --upgrade
+RUN python3 -m pip install setuptools
 
 WORKDIR /src/cmake
 RUN curl --fail-early --location https://github.com/Kitware/CMake/releases/download/v3.20.0/cmake-3.20.0.tar.gz \

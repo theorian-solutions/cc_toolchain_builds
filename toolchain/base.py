@@ -79,7 +79,7 @@ class ToolchainBaseApp(CliApp[TToolchainArgs]):
             # Extract sysroot as archive
             archive_path = os.path.join("/tmp", self._release_asset_name)
             self.logger.info(
-                f"Extracting ${self._image_tag} from image to '{archive_path}'..."
+                f"Extracting {self._image_tag} from image to '{archive_path}'..."
             )
 
             with lzma.open(archive_path, "wb") as output:
@@ -89,7 +89,7 @@ class ToolchainBaseApp(CliApp[TToolchainArgs]):
                 for chunk in chunks:
                     output.write(chunk)
             self.logger.info(
-                f"Successfully extracted ${self._image_tag} to '{archive_path}'!"
+                f"Successfully extracted {self._image_tag} to '{archive_path}'!"
             )
 
             # Upload to release assets
