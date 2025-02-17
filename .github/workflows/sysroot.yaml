@@ -1,0 +1,105 @@
+name: Build and publish sysroot
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Version that will be appended to release name and tag. Can be anything (i.e. does not have to be a number).'
+        required: true
+      linux_kernel_version:
+        description: 'Version of Linux kernel to build and link against'
+        default: '4.15'
+        required: false
+      glibc_version:
+        description: 'Version of GLIBC to build and link against'
+        default: '2.27'
+        required: false
+      force_rebuild:
+        description: 'If set rebuilds and reuploads existing builds for given release version (yes/no).'
+        default: 'no'
+        required: false
+
+permissions:
+  contents: write
+
+env:
+  BASE_IMAGE_CACHE_KEY: sysroot-base-image-
+  BASE_IMAGE_CACHE_PATH: ci/cache/docker/sysroot
+  RELEASE_TAG: sysroot-${{ github.event.inputs.release_version }}
+
+jobs:
+  base_image:
+    name: Build base image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      - name: Setup PYTHONPATH
+        run: echo "PYTHONPATH=$(pwd):$PYTHONPATH" >> $GITHUB_ENV
+      - name: Verify if sysroot toolchain base image cached
+        id: cache_sysroot_toolchain_base_image
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BASE_IMAGE_CACHE_PATH }}
+          key: ${{ env.BASE_IMAGE_CACHE_KEY }}${{ hashFiles('sysroot/Dockerfile.base') }}
+          lookup-only: true
+      - name: Build sysroot toolchain base image
+        run: |
+          python3 image/base_image.py                     \
+            --toolchain=sysroot                           \
+            --cache-path=${{ env.BASE_IMAGE_CACHE_PATH }} \
+            --op=store
+        if: steps.cache_sysroot_toolchain_base_image.outputs.cache-hit != 'true'
+
+  sysroot:
+    name: Build sysroot
+    runs-on: ubuntu-latest-16cpu
+    needs: base_image
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      - name: Setup PYTHONPATH
+        run: echo "PYTHONPATH=$(pwd):$PYTHONPATH" >> $GITHUB_ENV
+      - name: Download sysroot toolchain base image from cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BASE_IMAGE_CACHE_PATH }}
+          key: ${{ env.BASE_IMAGE_CACHE_KEY }}${{ hashFiles('sysroot/Dockerfile.base') }}
+          fail-on-cache-miss: true
+      - name: Load sysroot toolchain base image
+        run: |
+          python3 image/base_image.py                     \
+            --toolchain=sysroot                           \
+            --cache-path=${{ env.BASE_IMAGE_CACHE_PATH }} \
+            --op=load
+      - name: Create sysroot release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: SYSROOT ${{ github.event.inputs.release_version }}
+          tag_name: ${{ env.RELEASE_TAG }}
+      - name: Build sysroot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 sysroot/build_sysroot.py                                         \
+            --repository=${{ github.repository }}                                  \
+            --release-id=${{ env.RELEASE_TAG }}                                    \
+            --force-rebuild=${{ github.event.inputs.force_rebuild }}               \
+            --linux-kernel-version=${{ github.event.inputs.linux_kernel_version }} \
+            --glibc-version=${{ github.event.inputs.glibc_version }}

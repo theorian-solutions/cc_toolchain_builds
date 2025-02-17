@@ -1,9 +1,8 @@
-ARG LINUX_KERNEL_VERSION
-FROM gcc-toolchain-linux-kernel:${LINUX_KERNEL_VERSION} AS linux_kernel_image
+FROM sysroot-linux-kernel AS linux_kernel_image
 
 # ----------------------------------------------------------------------------------------------------------------
 
-FROM gcc-toolchain-base-with-host-compiler AS build_image
+FROM sysroot-toolchain-base AS build_image
 
 ARG INSTALL_DIR
 COPY --from=linux_kernel_image "${INSTALL_DIR}" "${INSTALL_DIR}"
@@ -19,7 +18,7 @@ RUN ../configure                                         \
       --host=x86_64-linux                                \
       --target=x86_64-linux                              \
       --enable-kernel=4.15                               \
-      --with-headers="${INSTALL_DIR}/usr/include" \
+      --with-headers="${INSTALL_DIR}/usr/include"        \
       --with-tls                                         \
       libc_cv_slibdir=/usr/lib
 RUN make all --jobs $(nproc)

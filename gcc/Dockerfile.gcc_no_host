@@ -1,4 +1,6 @@
-FROM gcc-toolchain-base-with-host-compiler as build_image
+FROM gcc-toolchain-base as build_image
+
+RUN apt install build-essential -y
 
 ARG GCC_VERSION
 WORKDIR /src/gcc

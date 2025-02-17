@@ -1,0 +1,130 @@
+name: Build and publish Clang
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Version that will be appended to release name and tag. Can be anything (i.e. does not have to be a number).'
+        required: true
+      sysroot_release:
+        description: 'Version of sysroot release to use as a toolchain sysroot.'
+        required: true
+      force_rebuild:
+        description: 'If set rebuilds and reuploads existing builds for given release version (yes/no).'
+        default: 'no'
+        required: false
+
+permissions:
+  contents: write
+
+env:
+  BASE_IMAGE_CACHE_KEY: clang-toolchain-base-image-
+  BASE_IMAGE_CACHE_PATH: ci/cache/docker/clang
+  RELEASE_TAG: clang-${{ github.event.inputs.release_version }}
+
+jobs:
+  base_image:
+    name: Build base image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      - name: Setup PYTHONPATH
+        run: echo "PYTHONPATH=$(pwd):$PYTHONPATH" >> $GITHUB_ENV
+      - name: Verify if Clang toolchain base image cached
+        id: cache-clang-toolchain-base-image
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BASE_IMAGE_CACHE_PATH }}
+          key: ${{ env.BASE_IMAGE_CACHE_KEY }}${{ hashFiles('clang/Dockerfile.base') }}
+          lookup-only: true
+      - name: Build Clang toolchain base image
+        run: |
+          python3 image/base_image.py                     \
+            --toolchain=clang                               \
+            --cache-path=${{ env.BASE_IMAGE_CACHE_PATH }} \
+            --op=store
+        if: steps.cache-clang-toolchain-base-image.outputs.cache-hit != 'true'
+
+  clang:
+    name: Build Clang ${{ matrix.version.llvm }}
+    runs-on: ubuntu-latest-16cpu
+    needs: base_image
+
+    strategy:
+      max-parallel: 1
+      matrix:
+        version:
+          - llvm: "17.0.6"
+          - llvm: "18.1.8"
+            host: "17.0.6"
+          - llvm: "19.1.7"
+            host: "18.1.8"
+          - llvm: "20.1.0-rc2"
+            host: "19.1.7"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      - name: Setup PYTHONPATH
+        run: echo "PYTHONPATH=$(pwd):$PYTHONPATH" >> $GITHUB_ENV
+      - name: Download Clang toolchain base images from cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BASE_IMAGE_CACHE_PATH }}
+          key: ${{ env.BASE_IMAGE_CACHE_KEY }}${{ hashFiles('clang/Dockerfile.base') }}
+          fail-on-cache-miss: true
+      - name: Load Clang toolchain base image
+        run: |
+          python3 image/base_image.py                     \
+            --toolchain=clang                             \
+            --cache-path=${{ env.BASE_IMAGE_CACHE_PATH }} \
+            --op=load
+      - name: Download sysroot
+        id: download-sysroot
+        uses: robinraju/release-downloader@v1
+        with:
+          tag: sysroot-${{ github.event.inputs.sysroot_release }}
+          fileName: sysroot-*.tar.xz
+      - name: Download host LLVM
+        id: download_host_llvm
+        uses: robinraju/release-downloader@v1
+        with:
+          tag: ${{ env.RELEASE_TAG }}
+          fileName: clang+llvm-${{ matrix.version.host }}-*.tar.xz
+        if: matrix.version.host != ''
+      - name: Setup host LLVM env
+        run: |
+          echo "HOST_LLVM_PATH=${{ fromJson(steps.download_host_llvm.outputs.downloaded_files)[0] }}" >> $GITHUB_ENV
+        if: matrix.version.host != ''
+      - name: Create Clang release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Clang ${{ github.event.inputs.release_version }} (SYSROOT ${{ github.event.inputs.sysroot_release }})
+          tag_name: ${{ env.RELEASE_TAG }}
+      - name: Build and publish Clang
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 clang/build_clang.py                                                         \
+            --repository=${{ github.repository }}                                              \
+            --release-id=${{ env.RELEASE_TAG }}                                                \
+            --force-rebuild=${{ github.event.inputs.force_rebuild }}                           \
+            --sysroot-path=${{ fromJson(steps.download-sysroot.outputs.downloaded_files)[0] }} \
+            --llvm-version=${{ matrix.version.llvm }}                                          \
+            --host-llvm="$HOST_LLVM_PATH"

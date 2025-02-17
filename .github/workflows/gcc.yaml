@@ -6,16 +6,11 @@ on:
       release_version:
         description: 'Version that will be appended to release name and tag. Can be anything (i.e. does not have to be a number).'
         required: true
-      linux_kernel_version:
-        description: 'Version of Linux kernel to build and link against'
-        default: '4.15'
-        required: false
-      glibc_version:
-        description: 'Version of GLIBC to build and link against'
-        default: '2.27'
-        required: false
+      sysroot_release:
+        description: 'Version of sysroot release to use as a toolchain sysroot.'
+        required: true
       force_rebuild:
-        description: 'If set rebuilds and reuploads existing GCC builds for given release version (yes/no).'
+        description: 'If set rebuilds and reuploads existing builds for given release version (yes/no).'
         default: 'no'
         required: false
 
@@ -23,15 +18,13 @@ permissions:
   contents: write
 
 env:
-  BASE_IMAGE_CACHE_KEY: gcc-toolchain-base-images-
-  BASE_IMAGE_CACHE_PATH: ci/cache/docker/gcc/toolchain-base-images
-  LINUX_KERNEL_GLIBC_CACHE_KEY: linux_kernel-${{ github.event.inputs.linux_kernel_version }}+glibc-${{ github.event.inputs.glibc_version }}-
-  LINUX_KERNEL_GLIBC_CACHE_PATH: ci/cache/docker/linux_kernel-${{ github.event.inputs.linux_kernel_version }}+glibc-${{ github.event.inputs.glibc_version }}.tar.xz
+  BASE_IMAGE_CACHE_KEY: gcc-toolchain-base-image-
+  BASE_IMAGE_CACHE_PATH: ci/cache/docker/gcc
   RELEASE_TAG: gcc-${{ github.event.inputs.release_version }}
 
 jobs:
-  base_images:
-    name: Build and cache base images
+  base_image:
+    name: Build base image
     runs-on: ubuntu-latest
 
     steps:
@@ -46,61 +39,25 @@ jobs:
         run: pip install -r requirements.txt
       - name: Setup PYTHONPATH
         run: echo "PYTHONPATH=$(pwd):$PYTHONPATH" >> $GITHUB_ENV
-      - name: Verify if GCC toolchain base images cached
-        id: cache-gcc-toolchain-base-images
+      - name: Verify if GCC toolchain base image cached
+        id: cache_gcc_toolchain_base_image
         uses: actions/cache@v4
         with:
           path: ${{ env.BASE_IMAGE_CACHE_PATH }}
-          key: ${{ env.BASE_IMAGE_CACHE_KEY }}${{ hashFiles('gcc/Dockerfile.base', 'gcc/Dockerfile.host_base') }}
+          key: ${{ env.BASE_IMAGE_CACHE_KEY }}${{ hashFiles('gcc/Dockerfile.base') }}
           lookup-only: true
-      - name: Build GCC toolchain base images
-        run: python3 gcc/base_image_cache.py --cache-path=${{ env.BASE_IMAGE_CACHE_PATH }} --op=store
-        if: steps.cache-gcc-toolchain-base-images.outputs.cache-hit != 'true'
-
-  glibc_and_linux_kernel:
-    name: Build linux kernel and glibc
-    runs-on: ubuntu-latest-16cpu
-    needs: base_images
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Python environment
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-          cache: 'pip'
-      - name: Install Python dependencies
-        run: pip install -r requirements.txt
-      - name: Setup PYTHONPATH
-        run: echo "PYTHONPATH=$(pwd):$PYTHONPATH" >> $GITHUB_ENV
-      - name: Download GCC toolchain base images from cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.BASE_IMAGE_CACHE_PATH }}
-          key: ${{ env.BASE_IMAGE_CACHE_KEY }}${{ hashFiles('gcc/Dockerfile.base', 'gcc/Dockerfile.host_base') }}
-          fail-on-cache-miss: true
-      - name: Load GCC toolchain base images
-        run: python3 gcc/base_image_cache.py --cache-path=${{ env.BASE_IMAGE_CACHE_PATH }} --op=load
-      - name: Verify if linux_kernel+glibc artifact is cached
-        id: cache-linux-kernel-glibc
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.LINUX_KERNEL_GLIBC_CACHE_PATH }}
-          key: ${{ env.LINUX_KERNEL_GLIBC_CACHE_KEY }}${{ hashFiles('gcc/Dockerfile.kernel', 'gcc/Dockerfile.glibc') }}
-          lookup-only: true
-      - name: Build linux kernel and glibc
+      - name: Build GCC toolchain base image
         run: |
-          python3 gcc/build_kernel_and_glibc.py                                    \
-            --cache-path=${{ env.LINUX_KERNEL_GLIBC_CACHE_PATH }}                  \
-            --linux-kernel-version=${{ github.event.inputs.linux_kernel_version }} \
-            --glibc-version=${{ github.event.inputs.glibc_version }}
-        if: steps.cache-linux-kernel-glibc.outputs.cache-hit != 'true'
+          python3 image/base_image.py                       \
+            --toolchain=gcc                                 \
+            --cache-path="${{ env.BASE_IMAGE_CACHE_PATH }}" \
+            --op=store
+        if: steps.cache_gcc_toolchain_base_image.outputs.cache-hit != 'true'
 
   gcc:
     name: Build GCC ${{ matrix.version.gcc }}
     runs-on: ubuntu-latest-16cpu
-    needs: glibc_and_linux_kernel
+    needs: base_image
 
     strategy:
       max-parallel: 1
@@ -146,31 +103,45 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.BASE_IMAGE_CACHE_PATH }}
-          key: ${{ env.BASE_IMAGE_CACHE_KEY }}${{ hashFiles('gcc/Dockerfile.base', 'gcc/Dockerfile.host_base') }}
+          key: ${{ env.BASE_IMAGE_CACHE_KEY }}${{ hashFiles('gcc/Dockerfile.base') }}
           fail-on-cache-miss: true
-      - name: Load GCC toolchain base images
-        run: python3 gcc/base_image_cache.py --cache-path=${{ env.BASE_IMAGE_CACHE_PATH }} --op=load
-      - name: Download linux_kernel+glibc from cache
-        uses: actions/cache@v4
+      - name: Load GCC toolchain base image
+        run: |
+          python3 image/base_image.py                       \
+            --toolchain=gcc                                 \
+            --cache-path="${{ env.BASE_IMAGE_CACHE_PATH }}" \
+            --op=load
+      - name: Download sysroot
+        id: download_sysroot
+        uses: robinraju/release-downloader@v1
         with:
-          path: ${{ env.LINUX_KERNEL_GLIBC_CACHE_PATH }}
-          key: ${{ env.LINUX_KERNEL_GLIBC_CACHE_KEY }}${{ hashFiles('gcc/Dockerfile.kernel', 'gcc/Dockerfile.glibc') }}
-          fail-on-cache-miss: true
+          tag: sysroot-${{ github.event.inputs.sysroot_release }}
+          fileName: sysroot-*.tar.xz
+      - name: Download host GCC
+        id: download_host_gcc
+        uses: robinraju/release-downloader@v1
+        with:
+          tag: ${{ env.RELEASE_TAG }}
+          fileName: gcc-${{ matrix.version.host }}-*.tar.xz
+        if: matrix.version.host != ''
+      - name: Setup host GCC env
+        run: |
+          echo "HOST_GCC_PATH=${{ fromJson(steps.download_host_gcc.outputs.downloaded_files)[0] }}" >> $GITHUB_ENV
+        if: matrix.version.host != ''
       - name: Create GCC release
-        id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          name: GCC ${{ github.event.inputs.release_version }} (GLIBC - ${{ github.event.inputs.glibc_version }})
+          name: GCC ${{ github.event.inputs.release_version }} (SYSROOT ${{ github.event.inputs.sysroot_release }})
           tag_name: ${{ env.RELEASE_TAG }}
       - name: Build and publish GCC
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python3 gcc/build_gcc.py                                             \
-            --repository=${{ github.repository }}                              \
-            --release-id=${{ env.RELEASE_TAG }}                                \
-            --linux-kernel-glibc-path=${{ env.LINUX_KERNEL_GLIBC_CACHE_PATH }} \
-            --force-rebuild=${{ github.event.inputs.force_rebuild }}           \
-            --host-gcc-version=${{ matrix.version.host }}                      \
-            --gcc-version=${{ matrix.version.gcc }}                            \
-            --binutils-version=${{ matrix.version.binutils }}
+          python3 gcc/build_gcc.py                                                               \
+            --repository="${{ github.repository }}"                                              \
+            --release-id="${{ env.RELEASE_TAG }}"                                                \
+            --force-rebuild="${{ github.event.inputs.force_rebuild }}"                           \
+            --sysroot-path="${{ fromJson(steps.download_sysroot.outputs.downloaded_files)[0] }}" \
+            --gcc-version="${{ matrix.version.gcc }}"                                            \
+            --binutils-version="${{ matrix.version.binutils }}"                                  \
+            --host-gcc="$HOST_GCC_PATH"

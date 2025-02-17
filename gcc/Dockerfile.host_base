@@ -1,3 +1,0 @@
-FROM gcc-toolchain-base
-
-RUN apt install build-essential -y
