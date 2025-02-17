@@ -3,7 +3,7 @@ import os
 import tarfile
 from typing import Optional
 
-from pydantic import Field, ValidationInfo, field_validator
+from pydantic import Field
 
 from archive.paths import (
     get_prefix_from_archive_path,
@@ -24,20 +24,6 @@ class BuildClangArgs(ToolchainBaseArgs):
         ...,
         description="Path to host LLVM to use to compile current Clang compiler.",
     )
-
-    @field_validator("host_gcc_path", mode="after")
-    @classmethod
-    def check_host_compiler_provided(
-        cls, value: Optional[str], info: ValidationInfo
-    ) -> Optional[str]:
-        if (not value and not info.data["host_clang_version"]) or (
-            value and info.data["host_clang_version"]
-        ):
-            raise ValueError(
-                "Either `--host-clang-version` or `--host-gcc-path` must be provided! "
-                f"Got --host_clang_version='{info.data["host_clang_version"]}' and --host-gcc-path='{value}'"
-            )
-        return value
 
 
 class BuildClangApp(ToolchainBaseApp[BuildClangArgs]):
