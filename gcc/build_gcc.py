@@ -1,6 +1,5 @@
 import lzma
 import os
-import requests
 import tarfile
 from typing import Optional
 
@@ -23,9 +22,9 @@ class BuildGccArgs(ToolchainBaseArgs):
 
     binutils_version: str = Field(..., description="Version of binutils to build.")
 
-    host_gcc_version: Optional[str] = Field(
+    host_gcc: Optional[str] = Field(
         default=None,
-        description="If provided it will use already uploaded GCC as host compiler to build current GCC compiler.",
+        description="Path to host GCC to use to compile current GCC compiler.",
     )
 
 
@@ -45,11 +44,6 @@ class BuildGccApp(ToolchainBaseApp[BuildGccArgs]):
         """Returns GCC artifact name as uploaded to release artifacts."""
         return f"gcc-{self.args.gcc_version}-x86_64-linux-gnu.tar.xz"
 
-    @property
-    def _host_gcc_asset_name(self):
-        """Returns host GCC artifact name as uploaded to release artifacts."""
-        return f"gcc-{self.args.host_gcc_version}-x86_64-linux-gnu.tar.xz"
-
     def _unpack_sysroot(self):
         """Unpack sysroot from cache."""
 
@@ -61,45 +55,19 @@ class BuildGccApp(ToolchainBaseApp[BuildGccArgs]):
             f"Successfully unpacked {os.path.basename(self.args.sysroot_path)}!"
         )
 
-    def _download_and_unpack_host_gcc(self):
-        """Downloads host compiler from GitHub release assets and unpacks it."""
+    def _unpack_host_gcc(self):
+        """Unpacks given host GCC archive."""
 
-        if not self.args.host_gcc_version:
+        if not self.args.host_gcc:
             raise RuntimeError(
-                "Requested unpacking of host gcc, but 'host-gcc-version' argument not provided!"
+                "Requested unpacking of host gcc, but 'host-gcc' argument not provided!"
             )
 
-        host_gcc_asset = next(
-            (
-                asset
-                for asset in self._release_assets
-                if asset.name == self._host_gcc_asset_name
-            ),
-            None,
-        )
-        if host_gcc_asset is None:
-            raise RuntimeError(
-                f"Could not find host GCC compiler '{self._host_gcc_asset_name}' in release assets!"
-            )
-
-        self.logger.info(f"Downloading host GCC compiler '{host_gcc_asset.name}'...")
-        response = requests.get(host_gcc_asset.browser_download_url, stream=True)
-        host_gcc_download_path = os.path.join("/tmp", host_gcc_asset.name)
-        with open(host_gcc_download_path, "wb") as file:
-            for chunk in response.iter_content(chunk_size=8192):
-                file.write(chunk)
-        self.logger.info(
-            f"Host GCC compiler '{host_gcc_asset.name}' successfully downloaded!"
-        )
-
-        self.logger.info(f"Unpacking '{host_gcc_asset.name}'...")
-        with lzma.open(host_gcc_download_path, "rb") as xz_file:
+        self.logger.info(f"Unpacking '{self.args.host_gcc}'...")
+        with lzma.open(self.args.host_gcc, "rb") as xz_file:
             with tarfile.open(fileobj=xz_file) as tar:
                 tar.extractall(path=self._host_gcc_path, filter="tar")
-        self.logger.info(f"Successfully unpacked {host_gcc_asset.name}!")
-
-        # Cleanup downloaded archive as it is not needed anymore
-        os.remove(host_gcc_download_path)
+        self.logger.info(f"Successfully unpacked {self.args.host_gcc}!")
 
     def _build_gcc_no_host(self):
         """Builds GCC by using system provided compiler."""
@@ -136,7 +104,7 @@ class BuildGccApp(ToolchainBaseApp[BuildGccArgs]):
     def _build_gcc_with_host(self):
         """Builds GCC by using provided host compiler."""
 
-        if not self.args.host_gcc_version:
+        if not self.args.host_gcc:
             raise RuntimeError(
                 "Requested building with host gcc, but 'host-gcc-version' argument not provided!"
             )
@@ -152,7 +120,7 @@ class BuildGccApp(ToolchainBaseApp[BuildGccArgs]):
                 "SRC_HOST_GCC_DIR": os.path.relpath(
                     os.path.join(
                         self._host_gcc_path,
-                        get_prefix_from_archive_path(self._host_gcc_asset_name),
+                        get_prefix_from_archive_path(self.args.host_gcc),
                     ),
                     self._build_path,
                 ),
@@ -178,10 +146,10 @@ class BuildGccApp(ToolchainBaseApp[BuildGccArgs]):
     def _build_toolchain(self):
         self._unpack_sysroot()
 
-        if not self.args.host_gcc_version:
+        if not self.args.host_gcc:
             self._build_gcc_no_host()
         else:
-            self._download_and_unpack_host_gcc()
+            self._unpack_host_gcc()
             self._build_gcc_with_host()
 
 

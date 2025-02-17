@@ -40,7 +40,7 @@ jobs:
       - name: Setup PYTHONPATH
         run: echo "PYTHONPATH=$(pwd):$PYTHONPATH" >> $GITHUB_ENV
       - name: Verify if GCC toolchain base image cached
-        id: cache-gcc-toolchain-base-image
+        id: cache_gcc_toolchain_base_image
         uses: actions/cache@v4
         with:
           path: ${{ env.BASE_IMAGE_CACHE_PATH }}
@@ -48,11 +48,11 @@ jobs:
           lookup-only: true
       - name: Build GCC toolchain base image
         run: |
-          python3 image/base_image.py                     \
-            --toolchain=gcc                               \
-            --cache-path=${{ env.BASE_IMAGE_CACHE_PATH }} \
+          python3 image/base_image.py                       \
+            --toolchain=gcc                                 \
+            --cache-path="${{ env.BASE_IMAGE_CACHE_PATH }}" \
             --op=store
-        if: steps.cache-gcc-toolchain-base-image.outputs.cache-hit != 'true'
+        if: steps.cache_gcc_toolchain_base_image.outputs.cache-hit != 'true'
 
   gcc:
     name: Build GCC ${{ matrix.version.gcc }}
@@ -107,16 +107,27 @@ jobs:
           fail-on-cache-miss: true
       - name: Load GCC toolchain base image
         run: |
-          python3 image/base_image.py                     \
-            --toolchain=gcc                               \
-            --cache-path=${{ env.BASE_IMAGE_CACHE_PATH }} \
+          python3 image/base_image.py                       \
+            --toolchain=gcc                                 \
+            --cache-path="${{ env.BASE_IMAGE_CACHE_PATH }}" \
             --op=load
       - name: Download sysroot
-        id: download-sysroot
+        id: download_sysroot
         uses: robinraju/release-downloader@v1
         with:
           tag: sysroot-${{ github.event.inputs.sysroot_release }}
           fileName: sysroot-*.tar.xz
+      - name: Download host GCC
+        id: download_host_gcc
+        uses: robinraju/release-downloader@v1
+        with:
+          tag: ${{ env.RELEASE_TAG }}
+          fileName: gcc-${{ matrix.version.host }}-*.tar.xz
+        if: matrix.version.host != ''
+      - name: Setup host GCC env
+        run: |
+          echo "HOST_GCC_PATH=${{ fromJson(steps.download_host_gcc.outputs.downloaded_files)[0] }}" >> $GITHUB_ENV
+        if: matrix.version.host != ''
       - name: Create GCC release
         uses: softprops/action-gh-release@v2
         with:
@@ -126,11 +137,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python3 gcc/build_gcc.py                                                             \
-            --repository=${{ github.repository }}                                              \
-            --release-id=${{ env.RELEASE_TAG }}                                                \
-            --sysroot-path=${{ fromJson(steps.download-sysroot.outputs.downloaded_files)[0] }} \
-            --force-rebuild=${{ github.event.inputs.force_rebuild }}                           \
-            --host-gcc-version=${{ matrix.version.host }}                                      \
-            --gcc-version=${{ matrix.version.gcc }}                                            \
-            --binutils-version=${{ matrix.version.binutils }}
+          python3 gcc/build_gcc.py                                                               \
+            --repository="${{ github.repository }}"                                              \
+            --release-id="${{ env.RELEASE_TAG }}"                                                \
+            --force-rebuild="${{ github.event.inputs.force_rebuild }}"                           \
+            --sysroot-path="${{ fromJson(steps.download_sysroot.outputs.downloaded_files)[0] }}" \
+            --gcc-version="${{ matrix.version.gcc }}"                                            \
+            --binutils-version="${{ matrix.version.binutils }}"                                  \
+            --host-gcc="$HOST_GCC_PATH"

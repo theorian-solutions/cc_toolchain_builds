@@ -6,7 +6,6 @@ cryptography==44.0.0
 Deprecated==1.2.18
 docker==7.1.0
 idna==3.10
-psutil==7.0.0
 pycparser==2.22
 pydantic==2.10.6
 pydantic_core==2.27.2
