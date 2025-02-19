@@ -18,6 +18,13 @@ ENV PATH="${HOST_COMPILER_DIR}/bin:${PATH}"
 COPY ./ClangToolChain.cmake ./
 COPY ./BuildLlvmMultistage-stage2.cmake ./clang/cmake/caches
 
+ENV PATCHES_PREFIX="/var/llvm_patches"
+ENV PATCHES_DIR="${PATCHES_PREFIX}/${LLVM_VERSION}"
+COPY ./patches ${PATCHES_PREFIX}
+
+# Run all patches chronological if they exists for currently built version
+RUN mkdir -p "${PATCHES_DIR}" && find "${PATCHES_DIR}" -type f | sort | xargs -r -I{} sh -c 'patch -p1 --batch < "{}"'
+
 WORKDIR /src/llvm-project/build
 RUN cmake -G "Ninja"                                                                     \
   -DCMAKE_TOOLCHAIN_FILE=../ClangToolChain.cmake                                         \

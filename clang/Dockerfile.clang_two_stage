@@ -13,6 +13,13 @@ COPY "${SRC_SYSROOT_DIR}" "${INSTALL_DIR}/x86_64-linux/sys-root"
 COPY ./BuildLlvmMultistage.cmake ./clang/cmake/caches
 COPY ./BuildLlvmMultistage-stage2.cmake ./clang/cmake/caches
 
+ENV PATCHES_PREFIX="/var/llvm_patches"
+ENV PATCHES_DIR="${PATCHES_PREFIX}/${LLVM_VERSION}"
+COPY ./patches ${PATCHES_PREFIX}
+
+# Run all patches chronological if they exists for currently built version
+RUN mkdir -p "${PATCHES_DIR}" && find "${PATCHES_DIR}" -type f | sort | xargs -r -I{} sh -c 'patch -p1 --batch < "{}"'
+
 WORKDIR /src/llvm-project/build
 RUN cmake -G "Ninja"                                                                     \
   -DCMAKE_BUILD_TYPE=Release                                                             \
