@@ -128,3 +128,53 @@ jobs:
             --sysroot-path=${{ fromJson(steps.download-sysroot.outputs.downloaded_files)[0] }} \
             --llvm-version=${{ matrix.version.llvm }}                                          \
             --host-llvm="$HOST_LLVM_PATH"
+
+  libclang:
+    name: Build libclang ${{ matrix.version.llvm }}
+    runs-on: ubuntu-latest-16cpu
+    needs: clang
+
+    strategy:
+      matrix:
+        version: ["17.0.6", "18.1.8", "19.1.7", "20.1.0-rc2"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      - name: Setup PYTHONPATH
+        run: echo "PYTHONPATH=$(pwd):$PYTHONPATH" >> $GITHUB_ENV
+      - name: Download Clang toolchain base images from cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BASE_IMAGE_CACHE_PATH }}
+          key: ${{ env.BASE_IMAGE_CACHE_KEY }}${{ hashFiles('clang/Dockerfile.base') }}
+          fail-on-cache-miss: true
+      - name: Load Clang toolchain base image
+        run: |
+          python3 image/base_image.py                     \
+            --toolchain=clang                             \
+            --cache-path=${{ env.BASE_IMAGE_CACHE_PATH }} \
+            --op=load
+      - name: Download host LLVM
+        id: download_host_llvm
+        uses: robinraju/release-downloader@v1
+        with:
+          tag: ${{ env.RELEASE_TAG }}
+          fileName: clang+llvm-${{ matrix.version }}-*.tar.xz
+      - name: Build and publish Clang
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 clang/build_clang.py                                                         \
+            --repository=${{ github.repository }}                                              \
+            --release-id=${{ env.RELEASE_TAG }}                                                \
+            --force-rebuild=${{ github.event.inputs.force_rebuild }}                           \
+            --llvm-version=${{ matrix.version.llvm }}                                          \
+            --compiler="${{ fromJson(steps.download_host_llvm.outputs.downloaded_files)[0] }}"
