@@ -172,7 +172,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python3 clang/build_clang.py                                                         \
+          python3 clang/build_libclang.py                                                      \
             --repository=${{ github.repository }}                                              \
             --release-id=${{ env.RELEASE_TAG }}                                                \
             --force-rebuild=${{ github.event.inputs.force_rebuild }}                           \
