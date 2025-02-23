@@ -60,7 +60,7 @@ class BuildLibClangApp(ToolchainBaseApp[BuildLibClangArgs]):
                 "SRC_HOST_COMPILER_DIR": os.path.relpath(
                     os.path.join(
                         self._host_clang_path,
-                        get_prefix_from_archive_path(self.args.host_llvm),
+                        get_prefix_from_archive_path(self.args.compiler),
                     ),
                     self._build_path,
                 ),
