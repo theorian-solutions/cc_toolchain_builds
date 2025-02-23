@@ -176,5 +176,5 @@ jobs:
             --repository=${{ github.repository }}                                              \
             --release-id=${{ env.RELEASE_TAG }}                                                \
             --force-rebuild=${{ github.event.inputs.force_rebuild }}                           \
-            --llvm-version=${{ matrix.version.llvm }}                                          \
+            --llvm-version=${{ matrix.version }}                                               \
             --compiler="${{ fromJson(steps.download_host_llvm.outputs.downloaded_files)[0] }}"
