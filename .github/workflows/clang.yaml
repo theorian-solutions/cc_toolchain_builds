@@ -130,7 +130,7 @@ jobs:
             --host-llvm="$HOST_LLVM_PATH"
 
   libclang:
-    name: Build libclang ${{ matrix.version.llvm }}
+    name: Build libclang ${{ matrix.version }}
     runs-on: ubuntu-latest-16cpu
     needs: clang
 
