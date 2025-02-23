@@ -15,8 +15,8 @@ ENV HOST_COMPILER_DIR="/opt/cc-x86_64-host"
 COPY "${SRC_HOST_COMPILER_DIR}" "${HOST_COMPILER_DIR}"
 ENV PATH="${HOST_COMPILER_DIR}/bin:${PATH}"
 
-COPY ./ClangToolChain.cmake ./
-COPY ./BuildLlvmMultistage-stage2.cmake ./clang/cmake/caches
+COPY ./cmake/ClangToolChain.cmake ./
+COPY ./cmake/caches ./clang/cmake/caches
 
 ENV PATCHES_PREFIX="/var/llvm_patches"
 ENV PATCHES_DIR="${PATCHES_PREFIX}/${LLVM_VERSION}"

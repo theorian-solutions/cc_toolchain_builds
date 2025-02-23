@@ -6,10 +6,12 @@ WORKDIR /src/llvm-project
 RUN curl --fail-early --location https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${LLVM_VERSION}.tar.gz \
   | tar --gz --extract --strip-components=1 --file -
 
-ARG SRC_SYSROOT_DIR
-ARG INSTALL_DIR
-COPY "${SRC_SYSROOT_DIR}" "${INSTALL_DIR}/x86_64-linux/sys-root"
+ARG SRC_HOST_COMPILER_DIR
+ENV HOST_COMPILER_DIR="/opt/cc-x86_64-host"
+COPY "${SRC_HOST_COMPILER_DIR}" "${HOST_COMPILER_DIR}"
+ENV PATH="${HOST_COMPILER_DIR}/bin:${PATH}"
 
+COPY ./cmake/ClangToolChain.cmake ./
 COPY ./cmake/caches ./clang/cmake/caches
 
 ENV PATCHES_PREFIX="/var/llvm_patches"
@@ -19,15 +21,16 @@ COPY ./patches ${PATCHES_PREFIX}
 # Run all patches chronological if they exists for currently built version
 RUN mkdir -p "${PATCHES_DIR}" && find "${PATCHES_DIR}" -type f | sort | xargs -r -I{} sh -c 'patch -p1 --batch < "{}"'
 
+ARG INSTALL_DIR
 WORKDIR /src/llvm-project/build
 RUN cmake -G "Ninja"                                                                     \
+  -DCMAKE_TOOLCHAIN_FILE=../ClangToolChain.cmake                                         \
   -DCMAKE_BUILD_TYPE=Release                                                             \
   -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}"                                                \
-  -DSTAGE2_LINUX_x86_64-unknown-linux-gnu_SYSROOT="${INSTALL_DIR}/x86_64-linux/sys-root" \
-  -C ../clang/cmake/caches/BuildLlvmMultistage.cmake                                     \
+  -C ../clang/cmake/caches/BuildLibClang.cmake                                           \
   ../llvm
-RUN ninja stage2-toolchain-distribution
-RUN ninja stage2-install-toolchain-distribution-stripped
+RUN ninja toolchain-distribution
+RUN ninja install-toolchain-distribution-stripped
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -35,4 +38,4 @@ RUN ninja stage2-install-toolchain-distribution-stripped
 FROM alpine:latest
 
 ARG INSTALL_DIR
-COPY --from=build_image "${INSTALL_DIR}" "${INSTALL_DIR}"
+COPY --from=build_image "${INSTALL_DIR}/lib" "${INSTALL_DIR}"
