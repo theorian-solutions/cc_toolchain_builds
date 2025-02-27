@@ -1,0 +1,20 @@
+diff --git a/clang/BuildLlvmMultistage-stage2.cmake b/clang/BuildLlvmMultistage-stage2.cmake
+index eaf4a80..875fec4 100644
+--- a/clang/cmake/caches/BuildLlvmMultistage-stage2.cmake
++++ b/clang/cmake/caches/BuildLlvmMultistage-stage2.cmake
+@@ -55,6 +55,7 @@ if(LINUX_${target}_SYSROOT)
+   set(BUILTINS_${target}_CMAKE_MODULE_LINKER_FLAGS "-fuse-ld=lld" CACHE STRING "")
+   set(BUILTINS_${target}_CMAKE_EXE_LINKER_FLAG "-fuse-ld=lld" CACHE STRING "")
+   set(BUILTINS_${target}_COMPILER_RT_BUILD_STANDALONE_LIBATOMIC ON CACHE BOOL "")
++  set(BUILTINS_${target}_COMPILER_RT_LIBATOMIC_USE_PTHREAD ON CACHE BOOL "")
+ 
+   # Set the per-target runtimes options.
+   set(LLVM_RUNTIME_TARGETS "${target}" CACHE STRING "")
+@@ -69,6 +70,7 @@ if(LINUX_${target}_SYSROOT)
+   set(RUNTIMES_${target}_CMAKE_EXE_LINKER_FLAGS "-fuse-ld=lld" CACHE STRING "")
+   set(RUNTIMES_${target}_COMPILER_RT_CXX_LIBRARY "libcxx" CACHE STRING "")
+   set(RUNTIMES_${target}_COMPILER_RT_USE_BUILTINS_LIBRARY ON CACHE BOOL "")
++  set(RUNTIMES_${target}_COMPILER_RT_USE_ATOMIC_LIBRARY ON CACHE BOOL "")
+   set(RUNTIMES_${target}_COMPILER_RT_USE_LLVM_UNWINDER ON CACHE BOOL "")
+   set(RUNTIMES_${target}_COMPILER_RT_CAN_EXECUTE_TESTS ON CACHE BOOL "")
+   set(RUNTIMES_${target}_COMPILER_RT_BUILD_STANDALONE_LIBATOMIC ON CACHE BOOL "")
