@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       release_version:
-        description: 'Version that will be appended to release name and tag. Can be anything (i.e. does not have to be a number).'
+        description: "Version that will be appended to release name and tag. Can be anything (i.e. does not have to be a number)."
         required: true
       sysroot_release:
-        description: 'Version of sysroot release to use as a toolchain sysroot.'
+        description: "Version of sysroot release to use as a toolchain sysroot."
         required: true
       force_rebuild:
-        description: 'If set rebuilds and reuploads existing builds for given release version (yes/no).'
-        default: 'no'
+        description: "If set rebuilds and reuploads existing builds for given release version (yes/no)."
+        default: "no"
         required: false
 
 permissions:
@@ -33,8 +33,8 @@ jobs:
       - name: Setup Python environment
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
-          cache: 'pip'
+          python-version: "3.13"
+          cache: "pip"
       - name: Install Python dependencies
         run: pip install -r requirements.txt
       - name: Setup PYTHONPATH
@@ -80,12 +80,24 @@ jobs:
           - host: "11.5.0"
             gcc: "12.4.0"
             binutils: "2.42"
+          - host: "11.5.0"
+            gcc: "12.5.0"
+            binutils: "2.44"
           - host: "12.4.0"
             gcc: "13.3.0"
             binutils: "2.42"
+          - host: "12.5.0"
+            gcc: "13.4.0"
+            binutils: "2.44"
           - host: "13.3.0"
             gcc: "14.2.0"
             binutils: "2.42"
+          - host: "13.4.0"
+            gcc: "14.3.0"
+            binutils: "2.44"
+          - host: "14.3.0"
+            gcc: "15.1.0"
+            binutils: "2.44"
 
     steps:
       - name: Checkout repository
@@ -93,8 +105,8 @@ jobs:
       - name: Setup Python environment
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
-          cache: 'pip'
+          python-version: "3.13"
+          cache: "pip"
       - name: Install Python dependencies
         run: pip install -r requirements.txt
       - name: Setup PYTHONPATH

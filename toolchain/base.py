@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 import lzma
 import os
 from typing import TypeVar
@@ -73,7 +73,9 @@ class ToolchainBaseApp(CliApp[TToolchainArgs]):
         """Extracts built toolchain and uploads it to release assets."""
 
         # Create container from built image to extract the output
-        toolchain_container = self.docker.containers.create(image=self._image_tag)
+        toolchain_container = self.docker.containers.create(
+            image=self._image_tag,
+        )  # type: ignore
 
         try:
             # Extract sysroot as archive
