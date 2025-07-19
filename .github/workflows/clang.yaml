@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       release_version:
-        description: 'Version that will be appended to release name and tag. Can be anything (i.e. does not have to be a number).'
+        description: "Version that will be appended to release name and tag. Can be anything (i.e. does not have to be a number)."
         required: true
       sysroot_release:
-        description: 'Version of sysroot release to use as a toolchain sysroot.'
+        description: "Version of sysroot release to use as a toolchain sysroot."
         required: true
       force_rebuild:
-        description: 'If set rebuilds and reuploads existing builds for given release version (yes/no).'
-        default: 'no'
+        description: "If set rebuilds and reuploads existing builds for given release version (yes/no)."
+        default: "no"
         required: false
 
 permissions:
@@ -33,8 +33,8 @@ jobs:
       - name: Setup Python environment
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
-          cache: 'pip'
+          python-version: "3.13"
+          cache: "pip"
       - name: Install Python dependencies
         run: pip install -r requirements.txt
       - name: Setup PYTHONPATH
@@ -70,6 +70,8 @@ jobs:
             host: "18.1.8"
           - llvm: "20.1.0"
             host: "19.1.7"
+          - llvm: "20.1.8"
+            host: "19.1.7"
 
     steps:
       - name: Checkout repository
@@ -77,8 +79,8 @@ jobs:
       - name: Setup Python environment
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
-          cache: 'pip'
+          python-version: "3.13"
+          cache: "pip"
       - name: Install Python dependencies
         run: pip install -r requirements.txt
       - name: Setup PYTHONPATH
@@ -136,7 +138,7 @@ jobs:
 
     strategy:
       matrix:
-        version: ["17.0.6", "18.1.8", "19.1.7", "20.1.0"]
+        version: ["17.0.6", "18.1.8", "19.1.7", "20.1.0", "20.1.8"]
 
     steps:
       - name: Checkout repository
@@ -144,8 +146,8 @@ jobs:
       - name: Setup Python environment
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
-          cache: 'pip'
+          python-version: "3.13"
+          cache: "pip"
       - name: Install Python dependencies
         run: pip install -r requirements.txt
       - name: Setup PYTHONPATH
