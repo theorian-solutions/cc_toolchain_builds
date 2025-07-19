@@ -131,7 +131,9 @@ class BuildGccApp(ToolchainBaseApp[BuildGccArgs]):
                     ),
                     self._build_path,
                 ),
-                "INSTALL_DIR": get_output_dir_from_archive_path(self._release_assets),
+                "INSTALL_DIR": get_output_dir_from_archive_path(
+                    self._release_asset_name
+                ),
                 "GCC_VERSION": self.args.gcc_version,
                 "BINUTILS_VERSION": self.args.binutils_version,
             },
