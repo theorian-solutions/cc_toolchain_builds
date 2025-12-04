@@ -72,7 +72,7 @@ jobs:
             host: "19.1.7"
           - llvm: "20.1.8"
             host: "19.1.7"
-          - llvm: "21.1.0"
+          - llvm: "21.1.7"
             host: "20.1.8"
 
     steps:
@@ -140,7 +140,7 @@ jobs:
 
     strategy:
       matrix:
-        version: ["17.0.6", "18.1.8", "19.1.7", "20.1.0", "20.1.8", "21.1.0"]
+        version: ["17.0.6", "18.1.8", "19.1.7", "20.1.0", "20.1.8", "21.1.7"]
 
     steps:
       - name: Checkout repository
