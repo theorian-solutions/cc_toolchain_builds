@@ -1,0 +1,20 @@
+diff --git a/clang/cmake/caches/BuildLlvmMultistage-stage2.cmake b/clang/cmake/caches/BuildLlvmMultistage-stage2.cmake
+index 875fec487d0e..b79d4581322a 100644
+--- a/clang/cmake/caches/BuildLlvmMultistage-stage2.cmake
++++ b/clang/cmake/caches/BuildLlvmMultistage-stage2.cmake
+@@ -32,7 +32,6 @@ set(CLANG_DEFAULT_LINKER lld CACHE STRING "")
+ set(CLANG_DEFAULT_OBJCOPY llvm-objcopy CACHE STRING "")
+ set(CLANG_DEFAULT_RTLIB compiler-rt CACHE STRING "")
+ set(CLANG_DEFAULT_UNWINDLIB libunwind CACHE STRING "")
+-set(CLANG_ENABLE_ARCMT OFF CACHE BOOL "")
+ set(CLANG_ENABLE_STATIC_ANALYZER ON CACHE BOOL "")
+ set(CLANG_PLUGIN_SUPPORT OFF CACHE BOOL "")
+
+@@ -116,7 +115,6 @@ set(LLVM_TOOLCHAIN_TOOLS
+   llvm-libtool-darwin
+   llvm-lipo
+   llvm-ml
+-  llvm-mt
+   llvm-nm
+   llvm-objcopy
+   llvm-objdump
