@@ -98,6 +98,9 @@ jobs:
           - host: "14.3.0"
             gcc: "15.1.0"
             binutils: "2.44"
+          - host: "14.3.0"
+            gcc: "15.2.0"
+            binutils: "2.45"
 
     steps:
       - name: Checkout repository

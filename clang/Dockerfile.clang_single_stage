@@ -16,7 +16,9 @@ COPY "${SRC_HOST_COMPILER_DIR}" "${HOST_COMPILER_DIR}"
 ENV PATH="${HOST_COMPILER_DIR}/bin:${PATH}"
 
 COPY ./cmake/ClangToolChain.cmake ./
-COPY ./cmake/caches ./clang/cmake/caches
+ENV CACHES_PREFIX="./cmake/caches"
+ENV CACHES_DIR="${CACHES_PREFIX}/${LLVM_VERSION}"
+COPY ${CACHES_DIR} ./clang/cmake/caches
 
 ENV PATCHES_PREFIX="/var/llvm_patches"
 ENV PATCHES_DIR="${PATCHES_PREFIX}/${LLVM_VERSION}"
